@@ -24,7 +24,6 @@ local Gui = Instance.new("ScreenGui", LP.PlayerGui)
 Gui.ResetOnSpawn = false
 Gui.IgnoreGuiInset = true
 
--- % MENU BUTTON
 local MenuBtn = Instance.new("TextButton", Gui)
 MenuBtn.Size = UDim2.new(0, 55, 0, 55)
 MenuBtn.Position = UDim2.new(1, -70, 0, 20)
@@ -36,7 +35,6 @@ MenuBtn.Active = true
 MenuBtn.Draggable = true
 MenuBtn.Visible = false
 
--- MENU
 local Menu = Instance.new("Frame", Gui)
 Menu.Size = UDim2.new(0, 440, 0, 330)
 Menu.Position = UDim2.new(0.5, -220, 0.5, -165)
@@ -49,7 +47,6 @@ MenuBtn.MouseButton1Click:Connect(function()
 	Menu.Visible = not Menu.Visible
 end)
 
--- FLOAT AIMBOT BUTTON
 local AimBtn = Instance.new("TextButton", Gui)
 AimBtn.Size = UDim2.new(0, 120, 0, 38)
 AimBtn.Position = UDim2.new(1, -150, 0, 20)
@@ -65,7 +62,6 @@ AimBtn.MouseButton1Click:Connect(function()
 	AimBtn.Text = AimbotEnabled and "AIMBOT : ON" or "AIMBOT : OFF"
 end)
 
--- TABS
 local Tabs = Instance.new("Frame", Menu)
 Tabs.Size = UDim2.new(1,0,0,35)
 Tabs.BackgroundTransparency = 1
@@ -81,7 +77,6 @@ TabE.Parent = Tabs
 TabE.Position = UDim2.new(0.5,0,0,0)
 TabE.Text = "ESP"
 
--- PAGES
 local AimbotPage = Instance.new("Frame", Menu)
 AimbotPage.Size = UDim2.new(1,0,1,-35)
 AimbotPage.Position = UDim2.new(0,0,0,35)
@@ -101,7 +96,6 @@ TabE.MouseButton1Click:Connect(function()
 	ESPPage.Visible = true
 end)
 
--- UI HELPERS
 local function Button(parent, y, text, callback)
 	local b = Instance.new("TextButton", parent)
 	b.Size = UDim2.new(0.9,0,0,30)
@@ -153,7 +147,6 @@ local function InputBox(title, info, default, apply)
 	end)
 end
 
--- AIMBOT OPTIONS
 Button(AimbotPage, 20, "Show Aimbot Button", function()
 	ShowAimbotButton = not ShowAimbotButton
 	AimBtn.Visible = ShowAimbotButton
@@ -198,7 +191,6 @@ PredictionBtn = Button(AimbotPage, 220, "Prediction Power : OFF", function()
 	PredictionBtn.Text = "Prediction Power : "..(PredictionPowerEnabled and "ON" or "OFF")
 end)
 
--- ESP OPTIONS
 Button(ESPPage, 20, "ESP Normal", function()
 	ESP_Normal = not ESP_Normal
 	if ESP_Normal then ESP_Team = false end
@@ -211,7 +203,6 @@ Button(ESPPage, 100, "Player Name", function() ESP_Name = not ESP_Name end)
 Button(ESPPage, 140, "Player HP", function() ESP_HP = not ESP_HP end)
 Button(ESPPage, 180, "Player Distance", function() ESP_Distance = not ESP_Distance end)
 
--- ESP LOGIC
 local function setupESP(plr)
 	if plr == LP then return end
 	local function apply(char)
@@ -265,7 +256,6 @@ end
 for _,p in pairs(Players:GetPlayers()) do setupESP(p) end
 Players.PlayerAdded:Connect(setupESP)
 
--- WALL CHECK FUNCTION
 local function canSee(part, character)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {LP.Character}
@@ -279,17 +269,18 @@ local function canSee(part, character)
 	return ray.Instance:IsDescendantOf(character)
 end
 
--- AIMBOT
 RS.RenderStepped:Connect(function()
 	if not AimbotEnabled then return end
 	if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
 
-	local bestTarget = nil
+	local bestTarget
 	local closest = math.huge
 
 	for _, p in pairs(Players:GetPlayers()) do
 		if p ~= LP and p.Character and p.Character:FindFirstChild(AimPart) then
 			if ESP_Team and p.Team == LP.Team then continue end
+			local hum = p.Character:FindFirstChildOfClass("Humanoid")
+			if not hum or hum.Health <= 0 then continue end
 
 			local part = p.Character[AimPart]
 			local _, onScreen = Camera:WorldToViewportPoint(part.Position)
@@ -299,9 +290,7 @@ RS.RenderStepped:Connect(function()
 			if dist > AimDistance or dist >= closest then continue end
 
 			if not WallCheck then
-				if not canSee(part, p.Character) then
-					continue
-				end
+				if not canSee(part, p.Character) then continue end
 			end
 
 			closest = dist
@@ -312,21 +301,17 @@ RS.RenderStepped:Connect(function()
 	if bestTarget then
 		local targetPos = bestTarget.Position
 		if PredictionPowerEnabled then
-			local vel = bestTarget.Parent:FindFirstChild("HumanoidRootPart") and bestTarget.Parent.HumanoidRootPart.Velocity or Vector3.new()
+			local hrp = bestTarget.Parent:FindFirstChild("HumanoidRootPart")
+			local vel = hrp and hrp.Velocity or Vector3.new()
 			targetPos = targetPos + vel * 0.1
 		end
-		Camera.CFrame = Camera.CFrame:Lerp(
-			CFrame.lookAt(Camera.CFrame.Position, targetPos),
-			AimForce
-		)
+		Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, targetPos), AimForce)
 	end
 end)
 
--- DVD INTRO
 task.delay(3, function()
 	local BlackScreen = Instance.new("Frame", Gui)
 	BlackScreen.Size = UDim2.fromScale(1,1)
-	BlackScreen.Position = UDim2.fromScale(0,0)
 	BlackScreen.BackgroundColor3 = Color3.new(0,0,0)
 	BlackScreen.ZIndex = 100
 
@@ -339,13 +324,13 @@ task.delay(3, function()
 	DVD.TextColor3 = Color3.fromRGB(0,255,0)
 	DVD.ZIndex = 101
 
-	local vel = Vector2.new(260,180)
 	local screen = Camera.ViewportSize
-	DVD.Position = UDim2.new(0,math.random(0,screen.X-140),0,math.random(0,screen.Y-60))
+	DVD.Position = UDim2.new(0, screen.X - 140, 0, 0)
+	local vel = Vector2.new(-260, 180)
 	local start = tick()
 
-	local function randomColor()
-		return Color3.fromHSV(math.random(),1,1)
+	local function neon()
+		return Color3.fromHSV(math.random(), 1, 1)
 	end
 
 	local conn
@@ -354,13 +339,13 @@ task.delay(3, function()
 		local y = DVD.Position.Y.Offset + vel.Y*dt
 
 		local bounced = false
-		if x <= 0 or x + DVD.AbsoluteSize.X >= screen.X then vel = Vector2.new(-vel.X,vel.Y) bounced = true end
-		if y <= 0 or y + DVD.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X,-vel.Y) bounced = true end
-		if bounced then DVD.TextColor3 = Color3.fromRGB(math.random(50,255),math.random(50,255),math.random(50,255)) end
+		if x <= 0 or x + DVD.AbsoluteSize.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) bounced = true end
+		if y <= 0 or y + DVD.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) bounced = true end
+		if bounced then DVD.TextColor3 = neon() end
 
-		DVD.Position = UDim2.new(0,math.clamp(x,0,screen.X-DVD.AbsoluteSize.X),0,math.clamp(y,0,screen.Y-DVD.AbsoluteSize.Y))
+		DVD.Position = UDim2.new(0, math.clamp(x,0,screen.X-DVD.AbsoluteSize.X), 0, math.clamp(y,0,screen.Y-DVD.AbsoluteSize.Y))
 
-		if tick()-start >= 20 then
+		if tick() - start >= 5 then
 			conn:Disconnect()
 			DVD.AnchorPoint = Vector2.new(0.5,0.5)
 			DVD.Position = UDim2.new(0.5,0,0.5,0)
@@ -380,14 +365,14 @@ task.delay(3, function()
 			h = RS.RenderStepped:Connect(function()
 				if tick()-last >= 10/#txt then last = tick() r += 1 end
 				for i=1,#txt do
-					cur[i] = i<=r and txt:sub(i,i) or chars:sub(math.random(#chars),math.random(#chars))
+					cur[i] = i<=r and txt:sub(i,i) or chars:sub(math.random(#chars), math.random(#chars))
 				end
 				DVD.Text = table.concat(cur)
 				DVD.TextColor3 = Color3.fromRGB(0,255,0)
 				if r >= #txt then
 					h:Disconnect()
 					DVD.Text = txt
-					task.delay(3,function()
+					task.delay(3, function()
 						BlackScreen:Destroy()
 						DVD:Destroy()
 						Menu.Visible = true
