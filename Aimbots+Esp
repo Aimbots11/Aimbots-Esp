@@ -8,10 +8,10 @@ local LP = Players.LocalPlayer
 local AimbotEnabled = false
 local ShowAimbotButton = false
 local WallCheck = false
-local AimPart = "Head" -- Head / Torso
+local AimPart = "Head"
 local AimForce = 0.9
 local AimDistance = 5000
-local PredictionPowerEnabled = false -- new option
+local PredictionPowerEnabled = false
 
 local ESP_Normal = false
 local ESP_Team = false
@@ -22,6 +22,7 @@ local ESP_Distance = true
 --// GUI
 local Gui = Instance.new("ScreenGui", LP.PlayerGui)
 Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
 
 -- % MENU BUTTON
 local MenuBtn = Instance.new("TextButton", Gui)
@@ -33,13 +34,14 @@ MenuBtn.TextColor3 = Color3.new(1,1,1)
 MenuBtn.BackgroundColor3 = Color3.new(0,0,0)
 MenuBtn.Active = true
 MenuBtn.Draggable = true
+MenuBtn.Visible = false
 
 -- MENU
 local Menu = Instance.new("Frame", Gui)
 Menu.Size = UDim2.new(0, 440, 0, 330)
 Menu.Position = UDim2.new(0.5, -220, 0.5, -165)
 Menu.BackgroundColor3 = Color3.new(0,0,0)
-Menu.Visible = true
+Menu.Visible = false
 Menu.Active = true
 Menu.Draggable = true
 
@@ -111,7 +113,6 @@ local function Button(parent, y, text, callback)
 	return b
 end
 
--- INPUT BOX WITH ✅ ❌
 local function InputBox(title, info, default, apply)
 	local f = Instance.new("Frame", Gui)
 	f.Size = UDim2.new(0, 320, 0, 160)
@@ -191,7 +192,6 @@ DistBtn = Button(AimbotPage, 180, "Aim Distance : "..AimDistance, function()
 	end)
 end)
 
--- NEW: Prediction Power Toggle
 local PredictionBtn
 PredictionBtn = Button(AimbotPage, 220, "Prediction Power : OFF", function()
 	PredictionPowerEnabled = not PredictionPowerEnabled
@@ -203,12 +203,10 @@ Button(ESPPage, 20, "ESP Normal", function()
 	ESP_Normal = not ESP_Normal
 	if ESP_Normal then ESP_Team = false end
 end)
-
 Button(ESPPage, 60, "ESP Team", function()
 	ESP_Team = not ESP_Team
 	if ESP_Team then ESP_Normal = false end
 end)
-
 Button(ESPPage, 100, "Player Name", function() ESP_Name = not ESP_Name end)
 Button(ESPPage, 140, "Player HP", function() ESP_HP = not ESP_HP end)
 Button(ESPPage, 180, "Player Distance", function() ESP_Distance = not ESP_Distance end)
@@ -281,7 +279,7 @@ local function canSee(part, character)
 	return ray.Instance:IsDescendantOf(character)
 end
 
--- AIMBOT (FORCE + DISTANCE + WALL CHECK + PREDICTION)
+-- AIMBOT
 RS.RenderStepped:Connect(function()
 	if not AimbotEnabled then return end
 	if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
@@ -315,11 +313,88 @@ RS.RenderStepped:Connect(function()
 		local targetPos = bestTarget.Position
 		if PredictionPowerEnabled then
 			local vel = bestTarget.Parent:FindFirstChild("HumanoidRootPart") and bestTarget.Parent.HumanoidRootPart.Velocity or Vector3.new()
-			targetPos = targetPos + vel * 0.1 -- simple prediction
+			targetPos = targetPos + vel * 0.1
 		end
 		Camera.CFrame = Camera.CFrame:Lerp(
 			CFrame.lookAt(Camera.CFrame.Position, targetPos),
 			AimForce
 		)
 	end
+end)
+
+-- DVD INTRO
+task.delay(3, function()
+	local BlackScreen = Instance.new("Frame", Gui)
+	BlackScreen.Size = UDim2.fromScale(1,1)
+	BlackScreen.Position = UDim2.fromScale(0,0)
+	BlackScreen.BackgroundColor3 = Color3.new(0,0,0)
+	BlackScreen.ZIndex = 100
+
+	local DVD = Instance.new("TextLabel", Gui)
+	DVD.Size = UDim2.new(0,140,0,60)
+	DVD.BackgroundTransparency = 1
+	DVD.Text = "DVD"
+	DVD.Font = Enum.Font.Arcade
+	DVD.TextScaled = true
+	DVD.TextColor3 = Color3.fromRGB(0,255,0)
+	DVD.ZIndex = 101
+
+	local vel = Vector2.new(260,180)
+	local screen = Camera.ViewportSize
+	DVD.Position = UDim2.new(0,math.random(0,screen.X-140),0,math.random(0,screen.Y-60))
+	local start = tick()
+
+	local function randomColor()
+		return Color3.fromHSV(math.random(),1,1)
+	end
+
+	local conn
+	conn = RS.RenderStepped:Connect(function(dt)
+		local x = DVD.Position.X.Offset + vel.X*dt
+		local y = DVD.Position.Y.Offset + vel.Y*dt
+
+		local bounced = false
+		if x <= 0 or x + DVD.AbsoluteSize.X >= screen.X then vel = Vector2.new(-vel.X,vel.Y) bounced = true end
+		if y <= 0 or y + DVD.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X,-vel.Y) bounced = true end
+		if bounced then DVD.TextColor3 = Color3.fromRGB(math.random(50,255),math.random(50,255),math.random(50,255)) end
+
+		DVD.Position = UDim2.new(0,math.clamp(x,0,screen.X-DVD.AbsoluteSize.X),0,math.clamp(y,0,screen.Y-DVD.AbsoluteSize.Y))
+
+		if tick()-start >= 20 then
+			conn:Disconnect()
+			DVD.AnchorPoint = Vector2.new(0.5,0.5)
+			DVD.Position = UDim2.new(0.5,0,0.5,0)
+			DVD.Size = UDim2.new(0,520,0,40)
+			DVD.Font = Enum.Font.Code
+			DVD.TextSize = 26
+			DVD.Text = ""
+			DVD.TextColor3 = Color3.fromRGB(0,255,0)
+
+			local txt = "SCRIPT REALIZED BY IIYUNUS"
+			local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
+			local cur = {}
+			local r = 0
+			local last = tick()
+
+			local h
+			h = RS.RenderStepped:Connect(function()
+				if tick()-last >= 10/#txt then last = tick() r += 1 end
+				for i=1,#txt do
+					cur[i] = i<=r and txt:sub(i,i) or chars:sub(math.random(#chars),math.random(#chars))
+				end
+				DVD.Text = table.concat(cur)
+				DVD.TextColor3 = Color3.fromRGB(0,255,0)
+				if r >= #txt then
+					h:Disconnect()
+					DVD.Text = txt
+					task.delay(3,function()
+						BlackScreen:Destroy()
+						DVD:Destroy()
+						Menu.Visible = true
+						MenuBtn.Visible = true
+					end)
+				end
+			end)
+		end
+	end)
 end)
