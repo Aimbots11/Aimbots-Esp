@@ -1,0 +1,325 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local RS = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+
+--// SETTINGS
+local AimbotEnabled = false
+local ShowAimbotButton = false
+local WallCheck = false
+local AimPart = "Head" -- Head / Torso
+local AimForce = 0.9
+local AimDistance = 5000
+local PredictionPowerEnabled = false -- new option
+
+local ESP_Normal = false
+local ESP_Team = false
+local ESP_Name = true
+local ESP_HP = true
+local ESP_Distance = true
+
+--// GUI
+local Gui = Instance.new("ScreenGui", LP.PlayerGui)
+Gui.ResetOnSpawn = false
+
+-- % MENU BUTTON
+local MenuBtn = Instance.new("TextButton", Gui)
+MenuBtn.Size = UDim2.new(0, 55, 0, 55)
+MenuBtn.Position = UDim2.new(1, -70, 0, 20)
+MenuBtn.Text = "%"
+MenuBtn.TextScaled = true
+MenuBtn.TextColor3 = Color3.new(1,1,1)
+MenuBtn.BackgroundColor3 = Color3.new(0,0,0)
+MenuBtn.Active = true
+MenuBtn.Draggable = true
+
+-- MENU
+local Menu = Instance.new("Frame", Gui)
+Menu.Size = UDim2.new(0, 440, 0, 330)
+Menu.Position = UDim2.new(0.5, -220, 0.5, -165)
+Menu.BackgroundColor3 = Color3.new(0,0,0)
+Menu.Visible = true
+Menu.Active = true
+Menu.Draggable = true
+
+MenuBtn.MouseButton1Click:Connect(function()
+	Menu.Visible = not Menu.Visible
+end)
+
+-- FLOAT AIMBOT BUTTON
+local AimBtn = Instance.new("TextButton", Gui)
+AimBtn.Size = UDim2.new(0, 120, 0, 38)
+AimBtn.Position = UDim2.new(1, -150, 0, 20)
+AimBtn.Text = "AIMBOT : OFF"
+AimBtn.TextColor3 = Color3.new(1,1,1)
+AimBtn.BackgroundColor3 = Color3.new(0,0,0)
+AimBtn.Visible = false
+AimBtn.Active = true
+AimBtn.Draggable = true
+
+AimBtn.MouseButton1Click:Connect(function()
+	AimbotEnabled = not AimbotEnabled
+	AimBtn.Text = AimbotEnabled and "AIMBOT : ON" or "AIMBOT : OFF"
+end)
+
+-- TABS
+local Tabs = Instance.new("Frame", Menu)
+Tabs.Size = UDim2.new(1,0,0,35)
+Tabs.BackgroundTransparency = 1
+
+local TabA = Instance.new("TextButton", Tabs)
+TabA.Size = UDim2.new(0.5,0,1,0)
+TabA.Text = "AIMBOT"
+TabA.TextColor3 = Color3.new(1,1,1)
+TabA.BackgroundColor3 = Color3.new(0.1,0.1,0.1)
+
+local TabE = TabA:Clone()
+TabE.Parent = Tabs
+TabE.Position = UDim2.new(0.5,0,0,0)
+TabE.Text = "ESP"
+
+-- PAGES
+local AimbotPage = Instance.new("Frame", Menu)
+AimbotPage.Size = UDim2.new(1,0,1,-35)
+AimbotPage.Position = UDim2.new(0,0,0,35)
+AimbotPage.BackgroundTransparency = 1
+
+local ESPPage = AimbotPage:Clone()
+ESPPage.Parent = Menu
+ESPPage.Visible = false
+
+TabA.MouseButton1Click:Connect(function()
+	AimbotPage.Visible = true
+	ESPPage.Visible = false
+end)
+
+TabE.MouseButton1Click:Connect(function()
+	AimbotPage.Visible = false
+	ESPPage.Visible = true
+end)
+
+-- UI HELPERS
+local function Button(parent, y, text, callback)
+	local b = Instance.new("TextButton", parent)
+	b.Size = UDim2.new(0.9,0,0,30)
+	b.Position = UDim2.new(0.05,0,0,y)
+	b.Text = text
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BackgroundColor3 = Color3.new(0.15,0.15,0.15)
+	b.MouseButton1Click:Connect(callback)
+	return b
+end
+
+-- INPUT BOX WITH ✅ ❌
+local function InputBox(title, info, default, apply)
+	local f = Instance.new("Frame", Gui)
+	f.Size = UDim2.new(0, 320, 0, 160)
+	f.Position = UDim2.new(0.5,-160,0.5,-80)
+	f.BackgroundColor3 = Color3.new(0,0,0)
+
+	local t = Instance.new("TextLabel", f)
+	t.Size = UDim2.new(1,0,0,30)
+	t.Text = title
+	t.TextColor3 = Color3.new(1,1,1)
+	t.BackgroundTransparency = 1
+
+	local infoLbl = Instance.new("TextLabel", f)
+	infoLbl.Size = UDim2.new(1,0,0,20)
+	infoLbl.Position = UDim2.new(0,0,0,30)
+	infoLbl.Text = info
+	infoLbl.TextScaled = true
+	infoLbl.TextColor3 = Color3.fromRGB(150,150,150)
+	infoLbl.BackgroundTransparency = 1
+
+	local box = Instance.new("TextBox", f)
+	box.Size = UDim2.new(0.9,0,0,30)
+	box.Position = UDim2.new(0.05,0,0,60)
+	box.Text = tostring(default)
+	box.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	box.TextColor3 = Color3.new(1,1,1)
+
+	local ok = Instance.new("TextButton", f)
+	ok.Size = UDim2.new(0,40,0,40)
+	ok.Position = UDim2.new(1,-45,1,-45)
+	ok.Text = "✅"
+	ok.BackgroundColor3 = Color3.fromRGB(0,170,0)
+
+	ok.MouseButton1Click:Connect(function()
+		local v = tonumber(box.Text)
+		if v then apply(v) end
+		f:Destroy()
+	end)
+end
+
+-- AIMBOT OPTIONS
+Button(AimbotPage, 20, "Show Aimbot Button", function()
+	ShowAimbotButton = not ShowAimbotButton
+	AimBtn.Visible = ShowAimbotButton
+end)
+
+local WallBtn
+WallBtn = Button(AimbotPage, 60, "Wall Check : OFF", function()
+	WallCheck = not WallCheck
+	WallBtn.Text = "Wall Check : "..(WallCheck and "ON" or "OFF")
+end)
+
+local AimPartBtn
+AimPartBtn = Button(AimbotPage, 100, "Aim Part : HEAD", function()
+	if AimPart == "Head" then
+		AimPart = "Torso"
+		AimPartBtn.Text = "Aim Part : TORSE"
+	else
+		AimPart = "Head"
+		AimPartBtn.Text = "Aim Part : HEAD"
+	end
+end)
+
+local ForceBtn
+ForceBtn = Button(AimbotPage, 140, "Aim Force : "..AimForce, function()
+	InputBox("Aim Force","0.1 = Smooth | 1 = Instant",AimForce,function(v)
+		AimForce = math.clamp(v,0.1,1)
+		ForceBtn.Text = "Aim Force : "..AimForce
+	end)
+end)
+
+local DistBtn
+DistBtn = Button(AimbotPage, 180, "Aim Distance : "..AimDistance, function()
+	InputBox("Aim Distance","Max target distance",AimDistance,function(v)
+		AimDistance = math.clamp(v,1,5000)
+		DistBtn.Text = "Aim Distance : "..AimDistance
+	end)
+end)
+
+-- NEW: Prediction Power Toggle
+local PredictionBtn
+PredictionBtn = Button(AimbotPage, 220, "Prediction Power : OFF", function()
+	PredictionPowerEnabled = not PredictionPowerEnabled
+	PredictionBtn.Text = "Prediction Power : "..(PredictionPowerEnabled and "ON" or "OFF")
+end)
+
+-- ESP OPTIONS
+Button(ESPPage, 20, "ESP Normal", function()
+	ESP_Normal = not ESP_Normal
+	if ESP_Normal then ESP_Team = false end
+end)
+
+Button(ESPPage, 60, "ESP Team", function()
+	ESP_Team = not ESP_Team
+	if ESP_Team then ESP_Normal = false end
+end)
+
+Button(ESPPage, 100, "Player Name", function() ESP_Name = not ESP_Name end)
+Button(ESPPage, 140, "Player HP", function() ESP_HP = not ESP_HP end)
+Button(ESPPage, 180, "Player Distance", function() ESP_Distance = not ESP_Distance end)
+
+-- ESP LOGIC
+local function setupESP(plr)
+	if plr == LP then return end
+	local function apply(char)
+		local hrp = char:WaitForChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+
+		local h = Instance.new("Highlight", char)
+		h.FillTransparency = 1
+
+		local g = Instance.new("BillboardGui", char)
+		g.Size = UDim2.new(0,160,0,28)
+		g.Adornee = hrp
+		g.StudsOffset = Vector3.new(0,2.5,0)
+		g.AlwaysOnTop = true
+
+		local t = Instance.new("TextLabel", g)
+		t.Size = UDim2.new(1,0,1,0)
+		t.BackgroundTransparency = 1
+		t.TextScaled = true
+
+		RS.RenderStepped:Connect(function()
+			if not (ESP_Normal or ESP_Team) then
+				h.Enabled = false
+				t.Text = ""
+				return
+			end
+
+			local col = Color3.new(1,1,1)
+			if ESP_Team then
+				col = (plr.Team == LP.Team) and Color3.new(0,0,1) or Color3.new(1,0,0)
+			end
+
+			h.Enabled = true
+			h.OutlineColor = col
+			t.TextColor3 = col
+
+			local txt = ""
+			if ESP_Name then txt ..= plr.Name.." " end
+			if ESP_HP and hum then txt ..= math.floor(hum.Health).."hp " end
+			if ESP_Distance and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+				txt ..= math.floor((LP.Character.HumanoidRootPart.Position-hrp.Position).Magnitude).."m"
+			end
+			t.Text = txt
+		end)
+	end
+
+	if plr.Character then apply(plr.Character) end
+	plr.CharacterAdded:Connect(apply)
+end
+
+for _,p in pairs(Players:GetPlayers()) do setupESP(p) end
+Players.PlayerAdded:Connect(setupESP)
+
+-- WALL CHECK FUNCTION
+local function canSee(part, character)
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = {LP.Character}
+	params.FilterType = Enum.RaycastFilterType.Blacklist
+
+	local origin = Camera.CFrame.Position
+	local direction = part.Position - origin
+	local ray = workspace:Raycast(origin, direction, params)
+
+	if not ray then return true end
+	return ray.Instance:IsDescendantOf(character)
+end
+
+-- AIMBOT (FORCE + DISTANCE + WALL CHECK + PREDICTION)
+RS.RenderStepped:Connect(function()
+	if not AimbotEnabled then return end
+	if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+
+	local bestTarget = nil
+	local closest = math.huge
+
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LP and p.Character and p.Character:FindFirstChild(AimPart) then
+			if ESP_Team and p.Team == LP.Team then continue end
+
+			local part = p.Character[AimPart]
+			local _, onScreen = Camera:WorldToViewportPoint(part.Position)
+			if not onScreen then continue end
+
+			local dist = (LP.Character.HumanoidRootPart.Position - part.Position).Magnitude
+			if dist > AimDistance or dist >= closest then continue end
+
+			if not WallCheck then
+				if not canSee(part, p.Character) then
+					continue
+				end
+			end
+
+			closest = dist
+			bestTarget = part
+		end
+	end
+
+	if bestTarget then
+		local targetPos = bestTarget.Position
+		if PredictionPowerEnabled then
+			local vel = bestTarget.Parent:FindFirstChild("HumanoidRootPart") and bestTarget.Parent.HumanoidRootPart.Velocity or Vector3.new()
+			targetPos = targetPos + vel * 0.1 -- simple prediction
+		end
+		Camera.CFrame = Camera.CFrame:Lerp(
+			CFrame.lookAt(Camera.CFrame.Position, targetPos),
+			AimForce
+		)
+	end
+end)
