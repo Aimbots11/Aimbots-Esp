@@ -9,9 +9,11 @@ local AimbotEnabled = false
 local ShowAimbotButton = false
 local WallCheck = false
 local AimPart = "Head"
-local AimForce = 0.9
-local AimDistance = 5000
+local AimForce = 0.5
+local AimDistance = 10000
 local PredictionPowerEnabled = false
+local FOVEnabled = false
+local FOVRadius = 30
 
 local ESP_Normal = false
 local ESP_Team = false
@@ -42,6 +44,12 @@ Menu.BackgroundColor3 = Color3.new(0,0,0)
 Menu.Visible = false
 Menu.Active = true
 Menu.Draggable = true
+Menu.ClipsDescendants = true
+Menu.AutomaticSize = Enum.AutomaticSize.None
+Menu.BackgroundTransparency = 0
+Menu.BorderSizePixel = 0
+local UICornerMenu = Instance.new("UICorner", Menu)
+UICornerMenu.CornerRadius = UDim.new(0,15)
 
 MenuBtn.MouseButton1Click:Connect(function()
 	Menu.Visible = not Menu.Visible
@@ -71,11 +79,15 @@ TabA.Size = UDim2.new(0.5,0,1,0)
 TabA.Text = "AIMBOT"
 TabA.TextColor3 = Color3.new(1,1,1)
 TabA.BackgroundColor3 = Color3.new(0.1,0.1,0.1)
+local UICornerTabA = Instance.new("UICorner", TabA)
+UICornerTabA.CornerRadius = UDim.new(0,10)
 
 local TabE = TabA:Clone()
 TabE.Parent = Tabs
 TabE.Position = UDim2.new(0.5,0,0,0)
 TabE.Text = "ESP"
+local UICornerTabE = Instance.new("UICorner", TabE)
+UICornerTabE.CornerRadius = UDim.new(0,10)
 
 local AimbotPage = Instance.new("Frame", Menu)
 AimbotPage.Size = UDim2.new(1,0,1,-35)
@@ -103,7 +115,14 @@ local function Button(parent, y, text, callback)
 	b.Text = text
 	b.TextColor3 = Color3.new(1,1,1)
 	b.BackgroundColor3 = Color3.new(0.15,0.15,0.15)
-	b.MouseButton1Click:Connect(callback)
+	local UICornerBtn = Instance.new("UICorner", b)
+	UICornerBtn.CornerRadius = UDim.new(0,10)
+	b.MouseButton1Click:Connect(function()
+		b:TweenSize(UDim2.new(0.85,0,0,30),"Out","Quad",0.1,true,function()
+			b:TweenSize(UDim2.new(0.9,0,0,30),"Out","Quad",0.1,true)
+		end)
+		callback()
+	end)
 	return b
 end
 
@@ -112,6 +131,8 @@ local function InputBox(title, info, default, apply)
 	f.Size = UDim2.new(0, 320, 0, 160)
 	f.Position = UDim2.new(0.5,-160,0.5,-80)
 	f.BackgroundColor3 = Color3.new(0,0,0)
+	local UICornerBox = Instance.new("UICorner", f)
+	UICornerBox.CornerRadius = UDim.new(0,15)
 
 	local t = Instance.new("TextLabel", f)
 	t.Size = UDim2.new(1,0,0,30)
@@ -139,6 +160,8 @@ local function InputBox(title, info, default, apply)
 	ok.Position = UDim2.new(1,-45,1,-45)
 	ok.Text = "✅"
 	ok.BackgroundColor3 = Color3.fromRGB(0,170,0)
+	local UICornerOk = Instance.new("UICorner", ok)
+	UICornerOk.CornerRadius = UDim.new(0,10)
 
 	ok.MouseButton1Click:Connect(function()
 		local v = tonumber(box.Text)
@@ -158,8 +181,20 @@ WallBtn = Button(AimbotPage, 60, "Wall Check : OFF", function()
 	WallBtn.Text = "Wall Check : "..(WallCheck and "ON" or "OFF")
 end)
 
+local PredictionBtn
+PredictionBtn = Button(AimbotPage, 100, "Prediction Power : OFF", function()
+	PredictionPowerEnabled = not PredictionPowerEnabled
+	PredictionBtn.Text = "Prediction Power : "..(PredictionPowerEnabled and "ON" or "OFF")
+end)
+
+local FOVBtn
+FOVBtn = Button(AimbotPage, 140, "FOV : OFF", function()
+	FOVEnabled = not FOVEnabled
+	FOVBtn.Text = "FOV : "..(FOVEnabled and "ON" or "OFF")
+end)
+
 local AimPartBtn
-AimPartBtn = Button(AimbotPage, 100, "Aim Part : HEAD", function()
+AimPartBtn = Button(AimbotPage, 180, "Aim Part : HEAD", function()
 	if AimPart == "Head" then
 		AimPart = "Torso"
 		AimPartBtn.Text = "Aim Part : TORSE"
@@ -170,7 +205,7 @@ AimPartBtn = Button(AimbotPage, 100, "Aim Part : HEAD", function()
 end)
 
 local ForceBtn
-ForceBtn = Button(AimbotPage, 140, "Aim Force : "..AimForce, function()
+ForceBtn = Button(AimbotPage, 220, "Aim Force : "..AimForce, function()
 	InputBox("Aim Force","0.1 = Smooth | 1 = Instant",AimForce,function(v)
 		AimForce = math.clamp(v,0.1,1)
 		ForceBtn.Text = "Aim Force : "..AimForce
@@ -178,19 +213,14 @@ ForceBtn = Button(AimbotPage, 140, "Aim Force : "..AimForce, function()
 end)
 
 local DistBtn
-DistBtn = Button(AimbotPage, 180, "Aim Distance : "..AimDistance, function()
+DistBtn = Button(AimbotPage, 260, "Aim Distance : "..AimDistance, function()
 	InputBox("Aim Distance","Max target distance",AimDistance,function(v)
-		AimDistance = math.clamp(v,1,5000)
+		AimDistance = math.clamp(v,1,10000)
 		DistBtn.Text = "Aim Distance : "..AimDistance
 	end)
 end)
 
-local PredictionBtn
-PredictionBtn = Button(AimbotPage, 220, "Prediction Power : OFF", function()
-	PredictionPowerEnabled = not PredictionPowerEnabled
-	PredictionBtn.Text = "Prediction Power : "..(PredictionPowerEnabled and "ON" or "OFF")
-end)
-
+-- ESP Buttons
 Button(ESPPage, 20, "ESP Normal", function()
 	ESP_Normal = not ESP_Normal
 	if ESP_Normal then ESP_Team = false end
@@ -203,6 +233,7 @@ Button(ESPPage, 100, "Player Name", function() ESP_Name = not ESP_Name end)
 Button(ESPPage, 140, "Player HP", function() ESP_HP = not ESP_HP end)
 Button(ESPPage, 180, "Player Distance", function() ESP_Distance = not ESP_Distance end)
 
+-- ESP Setup
 local function setupESP(plr)
 	if plr == LP then return end
 	local function apply(char)
@@ -256,6 +287,7 @@ end
 for _,p in pairs(Players:GetPlayers()) do setupESP(p) end
 Players.PlayerAdded:Connect(setupESP)
 
+-- Aimbot Logic with FOV check
 local function canSee(part, character)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {LP.Character}
@@ -289,6 +321,13 @@ RS.RenderStepped:Connect(function()
 			local dist = (LP.Character.HumanoidRootPart.Position - part.Position).Magnitude
 			if dist > AimDistance or dist >= closest then continue end
 
+			if FOVEnabled then
+				local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+				local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+				local delta = Vector2.new(screenPos.X, screenPos.Y) - center
+				if delta.Magnitude > FOVRadius then continue end
+			end
+
 			if not WallCheck then
 				if not canSee(part, p.Character) then continue end
 			end
@@ -309,6 +348,20 @@ RS.RenderStepped:Connect(function()
 	end
 end)
 
+-- FOV Drawing
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Radius = FOVRadius
+FOVCircle.Color = Color3.new(1,1,1)
+FOVCircle.Thickness = 2
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+
+RS.RenderStepped:Connect(function()
+	FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+	FOVCircle.Visible = FOVEnabled
+end)
+
+-- DVD Intro
 task.delay(3, function()
 	local BlackScreen = Instance.new("Frame", Gui)
 	BlackScreen.Size = UDim2.fromScale(1,1)
@@ -321,7 +374,7 @@ task.delay(3, function()
 	DVD.Text = "DVD"
 	DVD.Font = Enum.Font.Arcade
 	DVD.TextScaled = true
-	DVD.TextColor3 = Color3.fromRGB(0,255,0)
+	DVD.TextColor3 = Color3.new(0,255,0)
 	DVD.ZIndex = 101
 
 	local screen = Camera.ViewportSize
@@ -353,7 +406,7 @@ task.delay(3, function()
 			DVD.Font = Enum.Font.Code
 			DVD.TextSize = 26
 			DVD.Text = ""
-			DVD.TextColor3 = Color3.fromRGB(0,255,0)
+			DVD.TextColor3 = Color3.new(0,255,0)
 
 			local txt = "SCRIPT REALIZED BY IIYUNUS"
 			local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
@@ -368,7 +421,7 @@ task.delay(3, function()
 					cur[i] = i<=r and txt:sub(i,i) or chars:sub(math.random(#chars), math.random(#chars))
 				end
 				DVD.Text = table.concat(cur)
-				DVD.TextColor3 = Color3.fromRGB(0,255,0)
+				DVD.TextColor3 = Color3.new(0,255,0)
 				if r >= #txt then
 					h:Disconnect()
 					DVD.Text = txt
