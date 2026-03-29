@@ -374,7 +374,7 @@ task.delay(3, function()
 	DVD.Text = "DVD"
 	DVD.Font = Enum.Font.Arcade
 	DVD.TextScaled = true
-	DVD.TextColor3 = Color3.new(0,255,0)
+	DVD.TextColor3 = Color3.new(0,1,0)
 	DVD.ZIndex = 101
 
 	local screen = Camera.ViewportSize
@@ -386,8 +386,34 @@ task.delay(3, function()
 		return Color3.fromHSV(math.random(), 1, 1)
 	end
 
+	-- BOUTON SKIP
+	local SkipBtn = Instance.new("TextButton", Gui)
+	SkipBtn.Size = UDim2.new(0,100,0,40)
+	SkipBtn.Position = UDim2.new(0.5,-50,0,20)
+	SkipBtn.Text = "SKIP"
+	SkipBtn.BackgroundColor3 = Color3.new(1,0,0)
+	SkipBtn.TextColor3 = Color3.new(1,1,1)
+	SkipBtn.TextScaled = true
+	SkipBtn.ZIndex = 102
+
+	local finished = false
+	local function EndDVD()
+		if finished then return end
+		finished = true
+		if conn then conn:Disconnect() end
+		BlackScreen:Destroy()
+		DVD:Destroy()
+		SkipBtn:Destroy()
+		Menu.Visible = true
+		MenuBtn.Visible = true
+	end
+
+	SkipBtn.MouseButton1Click:Connect(EndDVD)
+
 	local conn
 	conn = RS.RenderStepped:Connect(function(dt)
+		if finished then return end
+
 		local x = DVD.Position.X.Offset + vel.X*dt
 		local y = DVD.Position.Y.Offset + vel.Y*dt
 
@@ -406,7 +432,7 @@ task.delay(3, function()
 			DVD.Font = Enum.Font.Code
 			DVD.TextSize = 26
 			DVD.Text = ""
-			DVD.TextColor3 = Color3.new(0,255,0)
+			DVD.TextColor3 = Color3.new(0,1,0)
 
 			local txt = "SCRIPT REALIZED BY IIYUNUS"
 			local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
@@ -414,23 +440,19 @@ task.delay(3, function()
 			local r = 0
 			local last = tick()
 
-			local h
 			h = RS.RenderStepped:Connect(function()
+				if finished then h:Disconnect() return end
 				if tick()-last >= 10/#txt then last = tick() r += 1 end
 				for i=1,#txt do
 					cur[i] = i<=r and txt:sub(i,i) or chars:sub(math.random(#chars), math.random(#chars))
 				end
 				DVD.Text = table.concat(cur)
-				DVD.TextColor3 = Color3.new(0,255,0)
+				DVD.TextColor3 = Color3.new(0,1,0) -- toujours vert
 				if r >= #txt then
 					h:Disconnect()
 					DVD.Text = txt
-					task.delay(3, function()
-						BlackScreen:Destroy()
-						DVD:Destroy()
-						Menu.Visible = true
-						MenuBtn.Visible = true
-					end)
+					DVD.TextColor3 = Color3.new(0,1,0)
+					task.delay(3, EndDVD)
 				end
 			end)
 		end
